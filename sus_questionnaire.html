@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KIU — Student Session Questionnaire</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg:       #f5f6fa;
+  --white:    #ffffff;
+  --border:   #e2e4ec;
+  --text:     #1a1d2e;
+  --muted:    #6b7180;
+  --accent:   #3b4fd8;
+  --accent-l: #eef0fc;
+  --success:  #16a34a;
+  --success-l:#dcfce7;
+  --radius:   10px;
+  --shadow:   0 1px 4px rgba(0,0,0,0.07);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  padding: 0 0 80px;
+}
+
+/* ── Header ─────────────────────────────────── */
+.header {
+  background: var(--accent);
+  color: #fff;
+  padding: 28px 40px 24px;
+}
+.header-inner { max-width: 720px; margin: 0 auto; }
+.kiu-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.18);
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 5px;
+  margin-bottom: 12px;
+}
+.header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.header p  { font-size: 13px; opacity: .8; }
+
+/* ── Progress bar ───────────────────────────── */
+.progress-wrap { background: var(--white); border-bottom: 1px solid var(--border); padding: 14px 40px; position: sticky; top: 0; z-index: 10; }
+.progress-inner { max-width: 720px; margin: 0 auto; }
+.progress-steps { display: flex; gap: 8px; align-items: center; }
+.pstep {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--muted);
+  cursor: pointer; padding: 4px 0;
+}
+.pstep.active { color: var(--accent); }
+.pstep.done   { color: var(--success); }
+.pstep-dot {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; background: var(--bg);
+}
+.pstep.active .pstep-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+.pstep.done .pstep-dot   { border-color: var(--success); background: var(--success); color: #fff; }
+.pstep-div { flex: 1; height: 1px; background: var(--border); }
+
+/* ── Main container ─────────────────────────── */
+.main { max-width: 720px; margin: 32px auto 0; padding: 0 24px; }
+
+/* ── Section card ───────────────────────────── */
+.section { display: none; }
+.section.active { display: block; }
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+.card-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--accent);
+  text-transform: uppercase; letter-spacing: .08em;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title svg { width: 16px; height: 16px; }
+
+/* ── Form fields ────────────────────────────── */
+.field { margin-bottom: 20px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 13px; font-weight: 500;
+  margin-bottom: 7px; color: var(--text);
+}
+.field label .req { color: #e53e3e; margin-left: 2px; }
+.field input[type="text"],
+.field input[type="number"],
+.field select,
+.field textarea {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border); border-radius: 7px;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  color: var(--text); background: var(--white);
+  transition: border-color .15s;
+  outline: none;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus { border-color: var(--accent); }
+.field textarea { resize: vertical; min-height: 80px; }
+.field .hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 540px) { .row2 { grid-template-columns: 1fr; } }
+
+/* ── Radio groups ───────────────────────────── */
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.radio-group label {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border: 1px solid var(--border);
+  border-radius: 7px; cursor: pointer; font-size: 13px;
+  font-weight: 400; color: var(--text);
+  transition: all .15s; margin-bottom: 0;
+}
+.radio-group label:hover { border-color: var(--accent); background: var(--accent-l); }
+.radio-group input[type="radio"] { display: none; }
+.radio-group input[type="radio"]:checked + span {
+  color: var(--accent); font-weight: 500;
+}
+.radio-group label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-l);
+}
+
+/* ── SUS scale ──────────────────────────────── */
+.sus-table { width: 100%; border-collapse: collapse; }
+.sus-table th, .sus-table td {
+  padding: 10px 8px; text-align: center;
+  font-size: 12px; border-bottom: 1px solid var(--border);
+}
+.sus-table th { color: var(--muted); font-weight: 500; }
+.sus-table td:first-child { text-align: left; font-size: 13px; padding-left: 0; width: 55%; }
+.sus-table tr:last-child td { border-bottom: none; }
+.sus-table tr:hover td { background: #fafbff; }
+
+.sus-radio-cell { position: relative; }
+.sus-radio-cell input[type="radio"] {
+  width: 18px; height: 18px; cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.scale-labels {
+  display: flex; justify-content: space-between;
+  font-size: 11px; color: var(--muted);
+  margin-bottom: 10px; padding: 0 4px;
+}
+
+/* ── Likert scale ───────────────────────────── */
+.likert { display: flex; gap: 6px; align-items: stretch; }
+.likert label {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 5px;
+  padding: 8px 4px; border: 1px solid var(--border);
+  border-radius: 7px; cursor: pointer; font-size: 11px;
+  color: var(--muted); text-align: center; margin-bottom: 0;
+  transition: all .15s; min-width: 0;
+}
+.likert label:hover { border-color: var(--accent); background: var(--accent-l); }
+.likert input[type="radio"] { display: none; }
+.likert label:has(input:checked) {
+  border-color: var(--accent); background: var(--accent-l); color: var(--accent);
+}
+.likert .lnum { font-size: 15px; font-weight: 600; }
+
+/* ── Navigation buttons ─────────────────────── */
+.nav { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.btn {
+  padding: 10px 24px; border-radius: 8px;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  font-weight: 500; cursor: pointer; border: none;
+  transition: all .15s;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: #2f3fb0; }
+.btn-secondary { background: var(--white); color: var(--muted); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--bg); color: var(--text); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #15803d; }
+
+/* ── Error messages ─────────────────────────── */
+.err-msg { display: none; font-size: 12px; color: #e53e3e; margin-top: 5px; }
+.field.has-error input,
+.field.has-error select,
+.field.has-error textarea { border-color: #e53e3e; }
+.field.has-error .err-msg { display: block; }
+
+/* ── Thank you screen ───────────────────────── */
+.thankyou {
+  text-align: center; padding: 48px 32px;
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.thankyou .icon-wrap {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--success-l); display: flex;
+  align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+}
+.thankyou h2 { font-size: 20px; margin-bottom: 8px; }
+.thankyou p  { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+.sus-score-display {
+  background: var(--accent-l); border: 1px solid #c7ccf5;
+  border-radius: 8px; padding: 16px 24px;
+  display: inline-block; margin-bottom: 20px;
+}
+.sus-score-display .score-num {
+  font-size: 40px; font-weight: 600; color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+}
+.sus-score-display .score-lbl { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.download-btn {
+  background: var(--accent); color: #fff;
+  border: none; border-radius: 8px; padding: 11px 28px;
+  font-family: 'Inter', sans-serif; font-size: 14px;
+  font-weight: 500; cursor: pointer; display: inline-flex;
+  align-items: center; gap: 8px; margin-top: 4px;
+}
+.download-btn:hover { background: #2f3fb0; }
+
+.info-banner {
+  background: var(--accent-l); border: 1px solid #c7ccf5;
+  border-radius: 8px; padding: 12px 16px;
+  font-size: 13px; color: #2f3fb0;
+  margin-bottom: 20px;
+  display: flex; align-items: flex-start; gap: 10px;
+}
+.info-banner svg { flex-shrink: 0; margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="kiu-tag">KIU University · Research Study</div>
+    <h1>Student Session Questionnaire</h1>
+    <p>Real-Time Comprehension Detection System · Dept. of Management Information Systems</p>
+  </div>
+</div>
+
+<!-- Progress -->
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <div class="progress-steps">
+      <div class="pstep active" id="ps-1" onclick="goTo(1)">
+        <div class="pstep-dot" id="pd-1">1</div>
+        <span>Pre-session</span>
+      </div>
+      <div class="pstep-div"></div>
+      <div class="pstep" id="ps-2" onclick="goTo(2)">
+        <div class="pstep-dot" id="pd-2">2</div>
+        <span>Post-session</span>
+      </div>
+      <div class="pstep-div"></div>
+      <div class="pstep" id="ps-3" onclick="goTo(3)">
+        <div class="pstep-dot" id="pd-3">3</div>
+        <span>SUS</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════
+     SECTION 1 — PRE-SESSION
+══════════════════════════════════════════ -->
+<div class="section active" id="sec-1">
+
+  <div class="info-banner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    Fill this out BEFORE your online learning session starts. All responses are anonymous.
+  </div>
+
+  <!-- Participant info -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Participant information
+    </div>
+
+    <div class="row2">
+      <div class="field" id="f-pid">
+        <label>Participant ID <span class="req">*</span></label>
+        <input type="text" id="participant_id" placeholder="e.g. KIU-001" />
+        <div class="hint">Assigned by the researcher — do not use your real name</div>
+        <div class="err-msg">Please enter your participant ID</div>
+      </div>
+      <div class="field" id="f-session">
+        <label>Session number <span class="req">*</span></label>
+        <input type="number" id="session_number" placeholder="1" min="1" max="10"/>
+        <div class="err-msg">Please enter the session number</div>
+      </div>
+    </div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Age range</label>
+        <select id="age_range">
+          <option value="">Select...</option>
+          <option>18–20</option><option>21–23</option>
+          <option>24–26</option><option>27+</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Gender</label>
+        <select id="gender">
+          <option value="">Prefer not to say</option>
+          <option>Male</option><option>Female</option><option>Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Year of study</label>
+      <div class="radio-group" id="year_of_study">
+        <label><input type="radio" name="year" value="Year 1"/><span>Year 1</span></label>
+        <label><input type="radio" name="year" value="Year 2"/><span>Year 2</span></label>
+        <label><input type="radio" name="year" value="Year 3"/><span>Year 3</span></label>
+        <label><input type="radio" name="year" value="Year 4"/><span>Year 4</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How often do you attend online classes per week?</label>
+      <div class="radio-group" id="online_freq">
+        <label><input type="radio" name="freq" value="Rarely"/><span>Rarely</span></label>
+        <label><input type="radio" name="freq" value="1–2 days"/><span>1–2 days</span></label>
+        <label><input type="radio" name="freq" value="3–4 days"/><span>3–4 days</span></label>
+        <label><input type="radio" name="freq" value="Every day"/><span>Every day</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pre-session stress -->
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+      Pre-session stress &amp; readiness
+    </div>
+
+    <div class="field">
+      <label>How stressed do you feel right now, before the session?</label>
+      <div class="scale-labels"><span>Not stressed at all</span><span>Extremely stressed</span></div>
+      <div class="likert">
+        <label><input type="radio" name="pre_stress" value="1"/><span class="lnum">1</span></label>
+        <label><input type="radio" name="pre_stress" value="2"/><span class="lnum">2</span></label>
+        <label><input type="radio" name="pre_stress" value="3"/><span class="lnum">3</span></label>
+        <label><input type="radio" name="pre_stress" value="4"/><span class="lnum">4</span></label>
+        <label><input type="radio" name="pre_stress" value="5"/><span class="lnum">5</span></label>
+        <label><input type="radio" name="pre_stress" value="6"/><span class="lnum">6</span></label>
+        <label><input type="radio" name="pre_stress" value="7"/><span class="lnum">7</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How familiar are you with today's topic before the session?</label>
+      <div class="radio-group" id="topic_familiarity">
+        <label><input type="radio" name="famil" value="Not at all"/><span>Not at all</span></label>
+        <label><input type="radio" name="famil" value="Slightly"/><span>Slightly familiar</span></label>
+        <label><input type="radio" name="famil" value="Moderately"/><span>Moderately</span></label>
+        <label><input type="radio" name="famil" value="Very"/><span>Very familiar</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How comfortable are you being recorded via webcam during this session?</label>
+      <div class="scale-labels"><span>Very uncomfortable</span><span>Very comfortable</span></div>
+      <div class="likert">
+        <label><input type="radio" name="webcam_comfort" value="1"/><span class="lnum">1</span></label>
+        <label><input type="radio" name="webcam_comfort" value="2"/><span class="lnum">2</span></label>
+        <label><input type="radio" name="webcam_comfort" value="3"/><span class="lnum">3</span></label>
+        <label><input type="radio" name="webcam_comfort" value="4"/><span class="lnum">4</span></label>
+        <label><input type="radio" name="webcam_comfort" value="5"/><span class="lnum">5</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Any concerns before we start? (optional)</label>
+      <textarea id="pre_concerns" placeholder="Write anything you'd like the researcher to know..."></textarea>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div></div>
+    <button class="btn btn-primary" onclick="next(1)">Continue to post-session →</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 2 — POST-SESSION
+══════════════════════════════════════════ -->
+<div class="section" id="sec-2">
+
+  <div class="info-banner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    Fill this out IMMEDIATELY AFTER your online learning session ends.
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 8v4l3 3"/></svg>
+      Post-session experience
+    </div>
+
+    <div class="field">
+      <label>How stressed did you feel DURING the session?</label>
+      <div class="scale-labels"><span>Not stressed at all</span><span>Extremely stressed</span></div>
+      <div class="likert">
+        <label><input type="radio" name="post_stress" value="1"/><span class="lnum">1</span></label>
+        <label><input type="radio" name="post_stress" value="2"/><span class="lnum">2</span></label>
+        <label><input type="radio" name="post_stress" value="3"/><span class="lnum">3</span></label>
+        <label><input type="radio" name="post_stress" value="4"/><span class="lnum">4</span></label>
+        <label><input type="radio" name="post_stress" value="5"/><span class="lnum">5</span></label>
+        <label><input type="radio" name="post_stress" value="6"/><span class="lnum">6</span></label>
+        <label><input type="radio" name="post_stress" value="7"/><span class="lnum">7</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How well did you understand the session content overall?</label>
+      <div class="scale-labels"><span>Did not understand</span><span>Fully understood</span></div>
+      <div class="likert">
+        <label><input type="radio" name="comprehension_self" value="1"/><span class="lnum">1</span></label>
+        <label><input type="radio" name="comprehension_self" value="2"/><span class="lnum">2</span></label>
+        <label><input type="radio" name="comprehension_self" value="3"/><span class="lnum">3</span></label>
+        <label><input type="radio" name="comprehension_self" value="4"/><span class="lnum">4</span></label>
+        <label><input type="radio" name="comprehension_self" value="5"/><span class="lnum">5</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How engaged did you feel during the session?</label>
+      <div class="scale-labels"><span>Not engaged</span><span>Fully engaged</span></div>
+      <div class="likert">
+        <label><input type="radio" name="engagement_self" value="1"/><span class="lnum">1</span></label>
+        <label><input type="radio" name="engagement_self" value="2"/><span class="lnum">2</span></label>
+        <label><input type="radio" name="engagement_self" value="3"/><span class="lnum">3</span></label>
+        <label><input type="radio" name="engagement_self" value="4"/><span class="lnum">4</span></label>
+        <label><input type="radio" name="engagement_self" value="5"/><span class="lnum">5</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Did the presence of the emotion detection system affect how you behaved during the session?</label>
+      <div class="radio-group" id="behaviour_effect">
+        <label><input type="radio" name="behav" value="Not at all"/><span>Not at all</span></label>
+        <label><input type="radio" name="behav" value="Slightly"/><span>Slightly</span></label>
+        <label><input type="radio" name="behav" value="Noticeably"/><span>Noticeably</span></label>
+        <label><input type="radio" name="behav" value="A lot"/><span>A lot</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>How much did knowing you were being monitored concern you about privacy?</label>
+      <div class="scale-labels"><span>No concern</span><span>Very concerned</span></div>
+      <div class="likert">
+        <label><input type="radio" name="privacy_concern" value="1"/><span class="lnum">1</span></label>
+        <label><input type="radio" name="privacy_concern" value="2"/><span class="lnum">2</span></label>
+        <label><input type="radio" name="privacy_concern" value="3"/><span class="lnum">3</span></label>
+        <label><input type="radio" name="privacy_concern" value="4"/><span class="lnum">4</span></label>
+        <label><input type="radio" name="privacy_concern" value="5"/><span class="lnum">5</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Do you think this system would be useful in real online classes?</label>
+      <div class="radio-group" id="usefulness">
+        <label><input type="radio" name="useful" value="Strongly disagree"/><span>Strongly disagree</span></label>
+        <label><input type="radio" name="useful" value="Disagree"/><span>Disagree</span></label>
+        <label><input type="radio" name="useful" value="Neutral"/><span>Neutral</span></label>
+        <label><input type="radio" name="useful" value="Agree"/><span>Agree</span></label>
+        <label><input type="radio" name="useful" value="Strongly agree"/><span>Strongly agree</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Any moments where you felt the system was clearly wrong about your emotion? (optional)</label>
+      <textarea id="incorrect_detection" placeholder="Describe any moments you noticed an incorrect detection..."></textarea>
+    </div>
+
+    <div class="field">
+      <label>Any other feedback about the session? (optional)</label>
+      <textarea id="post_feedback" placeholder="Suggestions, observations, anything you'd like to share..."></textarea>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-secondary" onclick="goTo(1)">← Back</button>
+    <button class="btn btn-primary" onclick="next(2)">Continue to SUS →</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     SECTION 3 — SUS
+══════════════════════════════════════════ -->
+<div class="section" id="sec-3">
+
+  <div class="info-banner">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    The System Usability Scale (SUS) is a validated 10-item questionnaire. Rate each statement based on your experience with the emotion detection system.
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      System Usability Scale (SUS) — 10 items
+    </div>
+
+    <div class="scale-labels" style="padding:0 0 8px">
+      <span>1 = Strongly disagree</span>
+      <span>5 = Strongly agree</span>
+    </div>
+
+    <table class="sus-table" id="sus-table">
+      <thead>
+        <tr>
+          <th style="text-align:left">Statement</th>
+          <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
+        </tr>
+      </thead>
+      <tbody id="sus-body"></tbody>
+    </table>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-secondary" onclick="goTo(2)">← Back</button>
+    <button class="btn btn-success" onclick="submit()">Submit &amp; save responses</button>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════
+     THANK YOU SCREEN
+══════════════════════════════════════════ -->
+<div class="section" id="sec-done">
+  <div class="thankyou">
+    <div class="icon-wrap">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <h2>Thank you for participating!</h2>
+    <p>Your responses have been saved. The researcher will collect this file from your device.</p>
+
+    <div class="sus-score-display">
+      <div class="score-num" id="sus-score-display">—</div>
+      <div class="score-lbl">Your SUS score (0–100)</div>
+    </div>
+    <div id="sus-grade" style="font-size:13px;color:var(--muted);margin-bottom:20px;"></div>
+
+    <button class="download-btn" onclick="downloadCSV()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download response file (.csv)
+    </button>
+    <p style="font-size:12px;color:var(--muted);margin-top:14px;">Hand this CSV file to your researcher after the session.</p>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// ── SUS questions (official validated set) ───────────────────
+const SUS_QUESTIONS = [
+  "I think that I would like to use this system frequently.",
+  "I found the system unnecessarily complex.",
+  "I thought the system was easy to use.",
+  "I think that I would need the support of a technical person to be able to use this system.",
+  "I found the various functions in this system were well integrated.",
+  "I thought there was too much inconsistency in this system.",
+  "I would imagine that most people would learn to use this system very quickly.",
+  "I found the system very cumbersome to use.",
+  "I felt very confident using the system.",
+  "I needed to learn a lot of things before I could get going with this system."
+];
+// Odd-indexed (0,2,4,6,8) = positive; Even-indexed (1,3,5,7,9) = negative
+
+// Build SUS table
+const tbody = document.getElementById('sus-body');
+SUS_QUESTIONS.forEach((q, i) => {
+  const row = document.createElement('tr');
+  let cells = `<td>${i+1}. ${q}</td>`;
+  for (let v = 1; v <= 5; v++) {
+    cells += `<td class="sus-radio-cell"><input type="radio" name="sus_${i}" value="${v}" required></td>`;
+  }
+  row.innerHTML = cells;
+  tbody.appendChild(row);
+});
+
+// ── State ────────────────────────────────────────────────────
+let currentSection = 1;
+const collectedData = {};
+
+// ── Navigation ───────────────────────────────────────────────
+function goTo(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-' + n).classList.add('active');
+  document.querySelectorAll('.pstep').forEach((s, i) => {
+    s.classList.remove('active','done');
+    const dot = document.getElementById('pd-' + (i+1));
+    if (i+1 < n) { s.classList.add('done'); dot.innerHTML = '✓'; }
+    else if (i+1 === n) { s.classList.add('active'); dot.innerHTML = i+1; }
+    else { dot.innerHTML = i+1; }
+  });
+  currentSection = n;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ── Validation helpers ───────────────────────────────────────
+function getRadioVal(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '';
+}
+
+function validateSection1() {
+  let ok = true;
+  const pid = document.getElementById('participant_id').value.trim();
+  const sid = document.getElementById('session_number').value.trim();
+  const f1 = document.getElementById('f-pid');
+  const f2 = document.getElementById('f-session');
+  f1.classList.toggle('has-error', !pid);
+  f2.classList.toggle('has-error', !sid);
+  if (!pid || !sid) ok = false;
+  return ok;
+}
+
+function validateSection2() { return true; }
+
+function validateSection3() {
+  let ok = true;
+  for (let i = 0; i < 10; i++) {
+    if (!getRadioVal('sus_' + i)) { ok = false; break; }
+  }
+  if (!ok) alert('Please answer all 10 SUS questions before submitting.');
+  return ok;
+}
+
+function next(from) {
+  let valid = false;
+  if (from === 1) valid = validateSection1();
+  else if (from === 2) valid = validateSection2();
+  if (valid) { collectSection(from); goTo(from + 1); }
+}
+
+// ── Data collection ──────────────────────────────────────────
+function collectSection(n) {
+  if (n === 1) {
+    Object.assign(collectedData, {
+      participant_id:   document.getElementById('participant_id').value.trim(),
+      session_number:   document.getElementById('session_number').value.trim(),
+      age_range:        document.getElementById('age_range').value,
+      gender:           document.getElementById('gender').value,
+      year_of_study:    getRadioVal('year'),
+      online_freq:      getRadioVal('freq'),
+      pre_stress:       getRadioVal('pre_stress'),
+      topic_familiarity:getRadioVal('famil'),
+      webcam_comfort:   getRadioVal('webcam_comfort'),
+      pre_concerns:     document.getElementById('pre_concerns').value.trim(),
+    });
+  } else if (n === 2) {
+    Object.assign(collectedData, {
+      post_stress:         getRadioVal('post_stress'),
+      comprehension_self:  getRadioVal('comprehension_self'),
+      engagement_self:     getRadioVal('engagement_self'),
+      behaviour_effect:    getRadioVal('behav'),
+      privacy_concern:     getRadioVal('privacy_concern'),
+      usefulness:          getRadioVal('useful'),
+      incorrect_detection: document.getElementById('incorrect_detection').value.trim(),
+      post_feedback:       document.getElementById('post_feedback').value.trim(),
+    });
+  }
+}
+
+// ── SUS score calculation ────────────────────────────────────
+// Official formula: positive items: score - 1; negative items: 5 - score
+// Sum all adjusted scores × 2.5
+function calcSUS() {
+  const positiveIdx = [0,2,4,6,8];
+  let total = 0;
+  for (let i = 0; i < 10; i++) {
+    const val = parseInt(getRadioVal('sus_' + i)) || 0;
+    collectedData['sus_q' + (i+1)] = val;
+    total += positiveIdx.includes(i) ? (val - 1) : (5 - val);
+  }
+  return Math.round(total * 2.5);
+}
+
+function susGrade(score) {
+  if (score >= 85)  return { grade: 'A  · Excellent',   color: '#16a34a' };
+  if (score >= 72)  return { grade: 'B  · Good',         color: '#2563eb' };
+  if (score >= 52)  return { grade: 'C  · Acceptable',   color: '#d97706' };
+  if (score >= 38)  return { grade: 'D  · Poor',         color: '#dc2626' };
+  return             { grade: 'F  · Unacceptable',       color: '#7f1d1d' };
+}
+
+// ── Submit ───────────────────────────────────────────────────
+function submit() {
+  if (!validateSection3()) return;
+  collectSection(2);
+
+  const score = calcSUS();
+  collectedData.sus_score = score;
+  collectedData.submitted_at = new Date().toISOString();
+
+  document.getElementById('sus-score-display').textContent = score;
+  const g = susGrade(score);
+  const gEl = document.getElementById('sus-grade');
+  gEl.textContent = 'Grade: ' + g.grade;
+  gEl.style.color = g.color;
+
+  document.querySelectorAll('.pstep').forEach((s, i) => {
+    s.classList.remove('active','done');
+    s.classList.add('done');
+    document.getElementById('pd-' + (i+1)).innerHTML = '✓';
+  });
+
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-done').classList.add('active');
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+// ── CSV download ─────────────────────────────────────────────
+function downloadCSV() {
+  const headers = Object.keys(collectedData);
+  const values  = headers.map(h => {
+    const v = String(collectedData[h] || '');
+    return v.includes(',') || v.includes('"') || v.includes('\n')
+      ? '"' + v.replace(/"/g, '""') + '"'
+      : v;
+  });
+
+  const csv = headers.join(',') + '\n' + values.join(',');
+  const blob = new Blob([csv], {type: 'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const pid  = collectedData.participant_id || 'unknown';
+  const sess = collectedData.session_number || '1';
+  a.href     = url;
+  a.download = `sus_response_${pid}_session${sess}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

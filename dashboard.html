@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>KIU Comprehension Monitor — Session Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg:       #0d0f14;
+    --surface:  #151821;
+    --surface2: #1c2030;
+    --border:   #252a3a;
+    --text:     #e8eaf0;
+    --muted:    #6b7280;
+    --engaged:  #22c55e;
+    --confused: #f59e0b;
+    --bored:    #ef4444;
+    --accent:   #6366f1;
+    --radius:   12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Space Grotesk', sans-serif; min-height: 100vh; padding-bottom: 60px; }
+
+  header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 18px 36px; display: flex; align-items: center; gap: 14px;
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo { background: var(--accent); color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; }
+  header h1 { font-size: 17px; font-weight: 600; }
+  header p  { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Upload */
+  #upload-area { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; padding: 40px; }
+  #drop-zone {
+    max-width: 480px; width: 100%; border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 56px 32px; text-align: center; cursor: pointer; transition: all .2s;
+  }
+  #drop-zone:hover, #drop-zone.drag { border-color: var(--accent); background: #1a1c2e; }
+  #drop-zone svg { width: 44px; height: 44px; stroke: var(--muted); margin-bottom: 14px; }
+  #drop-zone h2 { font-size: 17px; margin-bottom: 6px; }
+  #drop-zone p  { font-size: 13px; color: var(--muted); }
+  #file-input { display: none; }
+
+  /* Main */
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 32px 0; display: none; }
+
+  /* Section title */
+  .section-title {
+    font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Stat cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 28px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px 22px; position: relative; overflow: hidden;
+  }
+  .card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; border-radius: 3px 0 0 3px; }
+  .card.c-engaged::before  { background: var(--engaged); }
+  .card.c-confused::before { background: var(--confused); }
+  .card.c-bored::before    { background: var(--bored); }
+  .card.c-total::before    { background: var(--accent); }
+  .card .lbl  { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
+  .card .val  { font-size: 34px; font-weight: 700; margin: 4px 0 2px; font-family: 'JetBrains Mono', monospace; }
+  .card .sub  { font-size: 12px; color: var(--muted); }
+  .card.c-engaged  .val { color: var(--engaged); }
+  .card.c-confused .val { color: var(--confused); }
+  .card.c-bored    .val { color: var(--bored); }
+  .card.c-total    .val { color: var(--accent); }
+
+  /* Charts */
+  .charts-row { display: grid; grid-template-columns: 1fr 300px; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } }
+  .chart-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .chart-box h3 { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: .07em; }
+
+  /* Emotion bar chart row */
+  .emotion-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+  @media (max-width: 800px) { .emotion-row { grid-template-columns: 1fr; } }
+
+  /* Emotion bars */
+  .emo-bars { display: flex; flex-direction: column; gap: 10px; }
+  .emo-bar-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .emo-bar-label { min-width: 72px; color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .emo-bar-track { flex: 1; background: var(--surface2); border-radius: 4px; height: 18px; overflow: hidden; }
+  .emo-bar-fill  { height: 100%; border-radius: 4px; transition: width .4s ease; }
+  .emo-bar-count { min-width: 36px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+
+  /* Table */
+  .table-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 28px; }
+  .table-hdr { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .table-hdr h3 { font-size: 14px; font-weight: 600; }
+  .table-hdr span { font-size: 12px; color: var(--muted); }
+  .table-scroll { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { padding: 11px 18px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+  td { padding: 10px 18px; border-bottom: 1px solid #1a1e28; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'Space Grotesk', sans-serif; }
+  .badge.Engaged  { background: #14532d; color: var(--engaged); }
+  .badge.Confused { background: #451a03; color: var(--confused); }
+  .badge.Bored    { background: #450a0a; color: var(--bored); }
+  .badge.Unknown  { background: #1e2130; color: var(--muted); }
+
+  /* Error banner */
+  .error-banner { background: #450a0a; border: 1px solid #7f1d1d; border-radius: 8px; padding: 12px 18px; color: #fca5a5; font-size: 13px; margin-bottom: 20px; display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">KIU</div>
+  <div>
+    <h1>Comprehension Monitor — Session Dashboard</h1>
+    <p>Dept. of Management Information Systems · Real-Time Emotion Analysis</p>
+  </div>
+</header>
+
+<!-- Upload -->
+<div id="upload-area">
+  <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+    </svg>
+    <h2>Load Session Log</h2>
+    <p>Drag & drop your <code>session_log.csv</code> here, or click to browse</p>
+    <input type="file" id="file-input" accept=".csv"/>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="main" id="main">
+
+  <div class="error-banner" id="err-banner"></div>
+
+  <!-- Comprehension state cards -->
+  <div class="section-title">Session Overview</div>
+  <div class="cards">
+    <div class="card c-total">
+      <div class="lbl">Total Readings</div>
+      <div class="val" id="s-total">—</div>
+      <div class="sub" id="s-duration">—</div>
+    </div>
+    <div class="card c-engaged">
+      <div class="lbl">Engaged</div>
+      <div class="val" id="s-engaged">—</div>
+      <div class="sub" id="s-engaged-pct">—</div>
+    </div>
+    <div class="card c-confused">
+      <div class="lbl">Confused</div>
+      <div class="val" id="s-confused">—</div>
+      <div class="sub" id="s-confused-pct">—</div>
+    </div>
+    <div class="card c-bored">
+      <div class="lbl">Bored</div>
+      <div class="val" id="s-bored">—</div>
+      <div class="sub" id="s-bored-pct">—</div>
+    </div>
+  </div>
+
+  <!-- Timeline + donut -->
+  <div class="section-title">Comprehension Over Time</div>
+  <div class="charts-row">
+    <div class="chart-box">
+      <h3>State Timeline</h3>
+      <canvas id="timeline-chart" height="220"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>State Distribution</h3>
+      <canvas id="donut-chart" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- Emotion counts + bar chart -->
+  <div class="section-title">Emotion Detection Breakdown</div>
+  <div class="emotion-row">
+    <div class="chart-box">
+      <h3>Emotion Frequency (count)</h3>
+      <canvas id="emotion-bar-chart" height="220"></canvas>
+    </div>
+    <div class="chart-box">
+      <h3>Emotion Counts</h3>
+      <div class="emo-bars" id="emo-bars"></div>
+    </div>
+  </div>
+
+  <!-- Raw table -->
+  <div class="section-title">Raw Session Data</div>
+  <div class="table-box">
+    <div class="table-hdr">
+      <h3>All Readings</h3>
+      <span id="tbl-count">—</span>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Timestamp</th>
+            <th>Elapsed (s)</th>
+            <th>Emotion</th>
+            <th>Confidence</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Drag & drop ───────────────────────────────────────────
+const zone = document.getElementById('drop-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag'); handleFile(e.dataTransfer.files[0]); });
+document.getElementById('file-input').addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => render(parseCSV(e.target.result));
+  reader.readAsText(file);
+}
+
+// ── CSV parser ─────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const row = {};
+    headers.forEach((h, i) => row[h] = (vals[i] || '').trim().replace(/^"|"$/g, ''));
+    return row;
+  });
+}
+
+// ── Column name resolver (handles both old & new CSV formats) ──
+function col(row, ...candidates) {
+  for (const c of candidates) if (row[c] !== undefined) return row[c];
+  return '';
+}
+
+// ── Chart instances ────────────────────────────────────────
+let tlChart = null, donutChart = null, emoBarChart = null;
+
+const EMOTION_LABELS = ["Angry", "Disgust", "Fear", "Happy", "Sad", "Surprise", "Neutral"];
+const EMO_COLORS = {
+  Angry:    '#ef4444',
+  Disgust:  '#a855f7',
+  Fear:     '#f97316',
+  Happy:    '#22c55e',
+  Sad:      '#3b82f6',
+  Surprise: '#eab308',
+  Neutral:  '#6b7280',
+};
+
+function showError(msg) {
+  const el = document.getElementById('err-banner');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// ── Main render ────────────────────────────────────────────
+function render(rows) {
+  if (!rows.length) { showError('CSV appears empty or unreadable. Make sure you loaded session_log.csv from the logs/ folder.'); return; }
+
+  document.getElementById('upload-area').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+
+  // ── Resolve column names (support old 4-col format & new format) ──
+  const sample = rows[0];
+  const colTimestamp   = Object.keys(sample).find(k => k === 'timestamp' || k === 'time') || 'timestamp';
+  const colElapsed     = Object.keys(sample).find(k => k === 'elapsed_sec') || null;
+  const colEmotion     = Object.keys(sample).find(k => k === 'emotion') || 'emotion';
+  const colConfidence  = Object.keys(sample).find(k => k === 'confidence') || 'confidence';
+  const colState       = Object.keys(sample).find(k => k === 'comprehension_state' || k === 'state') || 'state';
+
+  // ── Counts ──────────────────────────────────────────────
+  const stateCounts  = { Engaged: 0, Confused: 0, Bored: 0, Unknown: 0 };
+  const emotionCounts = {};
+  EMOTION_LABELS.forEach(e => emotionCounts[e] = 0);
+
+  rows.forEach(r => {
+    const s = r[colState] || 'Unknown';
+    if (stateCounts[s] !== undefined) stateCounts[s]++;
+    else stateCounts['Unknown']++;
+
+    const e = r[colEmotion] || '';
+    if (emotionCounts[e] !== undefined) emotionCounts[e]++;
+  });
+
+  const total = rows.length;
+  const pct = n => total ? (n / total * 100).toFixed(1) + '%' : '—';
+
+  // ── Stat cards ───────────────────────────────────────────
+  document.getElementById('s-total').textContent        = total;
+  document.getElementById('s-engaged').textContent      = stateCounts.Engaged;
+  document.getElementById('s-confused').textContent     = stateCounts.Confused;
+  document.getElementById('s-bored').textContent        = stateCounts.Bored;
+  document.getElementById('s-engaged-pct').textContent  = pct(stateCounts.Engaged) + ' of session';
+  document.getElementById('s-confused-pct').textContent = pct(stateCounts.Confused) + ' of session';
+  document.getElementById('s-bored-pct').textContent    = pct(stateCounts.Bored) + ' of session';
+
+  // Session duration
+  if (colElapsed && rows[rows.length-1][colElapsed]) {
+    const lastSec = parseFloat(rows[rows.length-1][colElapsed]);
+    const m = Math.floor(lastSec/60), s = Math.round(lastSec%60);
+    document.getElementById('s-duration').textContent = `${m}m ${s}s session`;
+  } else {
+    document.getElementById('s-duration').textContent = total + ' readings recorded';
+  }
+
+  // ── Timeline chart ───────────────────────────────────────
+  const stateMap  = { Engaged: 1, Confused: 2, Bored: 3, Unknown: 0 };
+  const stateColor = { Engaged: '#22c55e', Confused: '#f59e0b', Bored: '#ef4444', Unknown: '#6b7280' };
+
+  const tlPoints = rows.map((r, i) => ({
+    x: colElapsed ? parseFloat(r[colElapsed] || 0) : i * 5,
+    y: stateMap[r[colState]] ?? 0,
+    state: r[colState],
+    emotion: r[colEmotion],
+    conf: r[colConfidence],
+  }));
+
+  if (tlChart) tlChart.destroy();
+  tlChart = new Chart(document.getElementById('timeline-chart'), {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: tlPoints,
+        pointBackgroundColor: tlPoints.map(p => stateColor[p.state] || '#6b7280'),
+        pointRadius: 7,
+        pointHoverRadius: 10,
+        showLine: true,
+        borderColor: '#252a3a',
+        borderWidth: 1,
+        tension: 0,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const d = ctx.raw;
+              return [
+                `State: ${d.state || '—'}`,
+                `Emotion: ${d.emotion || '—'}`,
+                `Confidence: ${d.conf ? (parseFloat(d.conf)*100).toFixed(1)+'%' : '—'}`,
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Elapsed (seconds)', color: '#6b7280', font: { size: 11 } },
+          ticks: { color: '#6b7280', font: { size: 11 } },
+          grid: { color: '#1c2030' }
+        },
+        y: {
+          min: 0, max: 4,
+          ticks: {
+            color: '#6b7280',
+            font: { size: 11 },
+            stepSize: 1,
+            callback: v => (['', 'Engaged', 'Confused', 'Bored', ''])[v] || '',
+          },
+          grid: { color: '#1c2030' }
+        }
+      }
+    }
+  });
+
+  // ── Donut chart ──────────────────────────────────────────
+  if (donutChart) donutChart.destroy();
+  donutChart = new Chart(document.getElementById('donut-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Engaged', 'Confused', 'Bored'],
+      datasets: [{
+        data: [stateCounts.Engaged, stateCounts.Confused, stateCounts.Bored],
+        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+        borderWidth: 0,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#9ca3af', padding: 16, font: { family: 'Space Grotesk', size: 12 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const val = ctx.parsed;
+              const t = ctx.dataset.data.reduce((a, b) => a + b, 0);
+              return ` ${ctx.label}: ${val} (${t ? (val/t*100).toFixed(1) : 0}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ── Emotion bar chart ────────────────────────────────────
+  const emoLabels = EMOTION_LABELS;
+  const emoCounts = emoLabels.map(e => emotionCounts[e] || 0);
+
+  if (emoBarChart) emoBarChart.destroy();
+  emoBarChart = new Chart(document.getElementById('emotion-bar-chart'), {
+    type: 'bar',
+    data: {
+      labels: emoLabels,
+      datasets: [{
+        label: 'Detections',
+        data: emoCounts,
+        backgroundColor: emoLabels.map(e => EMO_COLORS[e] + 'cc'),
+        borderColor: emoLabels.map(e => EMO_COLORS[e]),
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#9ca3af', font: { size: 11 } }, grid: { color: '#1c2030' } },
+        y: {
+          ticks: { color: '#9ca3af', font: { size: 11 }, stepSize: 1 },
+          grid: { color: '#1c2030' },
+          title: { display: true, text: 'Count', color: '#6b7280', font: { size: 11 } },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+
+  // ── Emotion horizontal bars ──────────────────────────────
+  const maxEmo = Math.max(...emoCounts, 1);
+  const barsHtml = emoLabels.map((e, i) => {
+    const count = emoCounts[i];
+    const widthPct = (count / maxEmo * 100).toFixed(1);
+    return `
+      <div class="emo-bar-row">
+        <div class="emo-bar-label">${e}</div>
+        <div class="emo-bar-track">
+          <div class="emo-bar-fill" style="width:${widthPct}%;background:${EMO_COLORS[e]};"></div>
+        </div>
+        <div class="emo-bar-count">${count}</div>
+      </div>`;
+  }).join('');
+  document.getElementById('emo-bars').innerHTML = barsHtml;
+
+  // ── Table ────────────────────────────────────────────────
+  document.getElementById('tbl-count').textContent = `${total} records`;
+  document.getElementById('tbl-body').innerHTML = rows.map((r, i) => {
+    const state = r[colState] || 'Unknown';
+    const conf  = parseFloat(r[colConfidence] || 0);
+    const elapsed = colElapsed ? r[colElapsed] : (i * 5).toString();
+    return `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${r[colTimestamp] || '—'}</td>
+        <td>${elapsed}</td>
+        <td>${r[colEmotion] || '—'}</td>
+        <td>${isNaN(conf) ? '—' : (conf > 1 ? conf.toFixed(1)+'%' : (conf*100).toFixed(1)+'%')}</td>
+        <td><span class="badge ${state}">${state}</span></td>
+      </tr>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
